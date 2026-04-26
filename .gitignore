@@ -1,0 +1,24 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+
+# Sensitive/secret files
+.env
+.env.*
+*.pem
+*.key
+*.secret
+credentials.*
+
+# Build artifacts
+node_modules/
+dist/
+*.log

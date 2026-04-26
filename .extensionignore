@@ -1,0 +1,19 @@
+# Development-only files — excluded from user installs
+
+# Agent instructions for this repo (not for end users)
+CLAUDE.md
+
+# Repo plumbing
+.git/
+.github/
+.gitignore
+
+# Dev docs and tests (if added later)
+docs/
+tests/
+*.test.*
+
+# Build artifacts
+__pycache__/
+*.pyc
+dist/

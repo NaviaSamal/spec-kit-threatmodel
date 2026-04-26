@@ -1,0 +1,36 @@
+schema_version: "1.0"
+
+extension:
+  id: "threatmodel"
+  name: "OWASP LLM Threat Model"
+  version: "1.0.0"
+  description: "OWASP Top 10 for LLM Applications 2025 threat analysis on agent artifacts"
+  author: "NaviaSamal"
+  repository: "https://github.com/NaviaSamal/spec-kit-threatmodel"
+  license: "MIT"
+  homepage: "https://github.com/NaviaSamal/spec-kit-threatmodel"
+
+requires:
+  speckit_version: ">=0.6.0"
+  scripts:
+    - "check-prerequisites.sh"
+
+provides:
+  commands:
+    - name: "speckit.threatmodel.analyze"
+      file: "commands/analyze.md"
+      description: "Perform OWASP LLM Top 10 2025 threat analysis on skill files. Generates threat-model-{date}-{seq}.md."
+
+hooks:
+  after_implement:
+    command: "speckit.threatmodel.analyze"
+    optional: true
+    prompt: "Run OWASP LLM threat analysis on this feature?"
+    description: "Post-implementation security review"
+
+tags:
+  - "security"
+  - "owasp"
+  - "threat-model"
+  - "llm"
+  - "analysis"
