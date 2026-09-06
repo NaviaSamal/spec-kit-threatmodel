@@ -1,5 +1,5 @@
 ---
-description: Perform OWASP LLM Top 10 2025 threat analysis on skill files. Generates threat-model-{date}-{seq}.md.
+description: Perform OWASP LLM Top 10 2026 threat analysis on skill files. Generates threat-model-{date}-{seq}.md.
 argument-hint: Optional focus areas or specific OWASP LLM categories to analyze
 ---
 
@@ -47,7 +47,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Goal
 
-Identify LLM-specific security threats in skill files using the OWASP LLM Top 10 2025 framework. Generate a structured threat model.
+Identify LLM-specific security threats in skill files using the OWASP LLM Top 10 2026 framework. Generate a structured threat model.
 
 ## Operating Constraints
 
@@ -99,8 +99,10 @@ For each file, extract:
 - Auto-execution without user confirmation gates
 - Memory/persistent file writes
 - Self-references or circular invocations
+- Tool-call fan-out, downstream-command chaining, and iteration/retry caps (or the absence of any cap) — feeds Unbounded Consumption (LLM06)
+- Instructions telling the agent to guess, auto-fill, assume defaults, or skip human review without verification — feeds Misinformation (LLM07)
 
-### 5. Apply OWASP LLM Top 10 2025 Threat Categories
+### 5. Apply OWASP LLM Top 10 2026 Threat Categories
 
 Analyze each skill against these categories. Report a threat **only** when concrete evidence is found — do not speculate.
 
@@ -108,14 +110,14 @@ Analyze each skill against these categories. Report a threat **only** when concr
 |-------|-----------------------------------|---------------|
 | LLM01 | Prompt Injection                  | Unescaped `$ARGUMENTS`, raw file content interpolation, missing input sanitization |
 | LLM02 | Sensitive Information Disclosure  | API keys, tokens, credentials, PII, environment variables exposed |
-| LLM03 | Supply Chain                      | External dependencies, fetching skills from URLs, untrusted sources |
-| LLM04 | Data and Model Poisoning          | User input written to persistent/memory files that influence downstream commands |
-| LLM05 | Improper Output Handling          | Skill output used in shell commands, file paths constructed from LLM output |
-| LLM06 | Excessive Agency                  | Auto-execution without confirmation, `EXECUTE_COMMAND` without gates |
-| LLM07 | System Prompt Leakage             | System prompts exposed to users, instructions visible in output |
-| LLM08 | Vector and Embedding Weaknesses   | Unvalidated RAG data sources, embedding injection |
-| LLM09 | Misinformation                    | Skills that skip human review, auto-approve patterns, unverified fact generation |
-| LLM10 | Unbounded Consumption             | Recursive skill invocation, unbounded loops, cyclic references |
+| LLM03 | Excessive Agency                  | Auto-execution without confirmation, `EXECUTE_COMMAND` without gates, excessive tool functionality/permissions/autonomy granted to the skill |
+| LLM04 | Supply Chain                      | External dependencies, fetching skills from URLs, untrusted sources |
+| LLM05 | Data and Model Poisoning          | User input written to persistent/memory files that influence downstream commands |
+| LLM06 | Unbounded Consumption             | Recursive skill invocation, unbounded loops, cyclic references, uncapped tool-call fan-out or downstream-command chaining |
+| LLM07 | Misinformation                    | "Make informed guesses"/auto-fill/assume-default patterns, skills that skip human review, auto-approve, or generate unverified facts |
+| LLM08 | Hidden Context Exposure           | Instructions, refusal rules, secrets, or behavioral-control logic embedded in readable skill/context files (assess per skill, grade by what is actually exposed) |
+| LLM09 | Vector and Embedding Weaknesses   | Unvalidated RAG data sources, embedding injection |
+| LLM10 | Improper Output Handling          | Skill output used in shell commands, file paths / SQL / templates constructed from LLM output |
 
 Source: https://genai.owasp.org/llm-top-10/
 
@@ -123,7 +125,7 @@ Source: https://genai.owasp.org/llm-top-10/
 - Each threat assigned to exactly ONE category (no dual-categorization)
 - Threat IDs: `THR-{NN}-{SSS}` (e.g., `THR-01-001` for Prompt Injection finding #1)
 - If no threats for a category, state: "No threats identified." with one-line reason
-- LLM07 (System Prompt Leakage): Report **once** as systemic finding if SKILL.md files are readable workspace files — do NOT repeat per skill
+- LLM08 (Hidden Context Exposure): assess **per skill**, not as a single systemic finding. Grade severity by what is actually exposed — treat readable skill/instruction files as **informational** (little or no direct security impact) unless they leak credentials/tokens, authorization logic, or refusal/behavioral-control rules, in which case rate higher accordingly.
 
 ### 6. Assign Risk Ratings
 
@@ -161,7 +163,7 @@ Substitution rules:
 - **Empty category**: when a category has no threats, the `{{else}}` branch fires — render exactly `"No threat detected."` Do not supply a reason, do not customize the message per category.
 - **Blocking Threats section**: include only findings where Risk is Critical (per the blocking definition in step 6); list as bullets with `threat_id`, `skill_names`, `one_sentence_description`
 - **Risk Matrix Summary**: count findings per (Likelihood × Impact) cell
-- **Threats Identified summary table** (`THREATS_TABLE`): one row per threat, in the same descending-Risk-then-skill-name order used for the per-category sections. Each row has `threat_id`, `category_name` (e.g., "Prompt Injection", "System Prompt Leakage (systemic)" for LLM07), `likelihood_x_impact` (formatted as "Med × High", "High × Low", etc., using the abbreviations Low/Med/High/Critical), and `risk`.
+- **Threats Identified summary table** (`THREATS_TABLE`): one row per threat, in the same descending-Risk-then-skill-name order used for the per-category sections. Each row has `threat_id`, `category_name` (e.g., "Prompt Injection", "Hidden Context Exposure" for LLM08), `likelihood_x_impact` (formatted as "Med × High", "High × Low", etc., using the abbreviations Low/Med/High/Critical), and `risk`.
 
 **Template-enforced rules** (already encoded in the template — do not restate or override):
 - Bold markers on Likelihood, Impact, Risk
@@ -173,7 +175,7 @@ Substitution rules:
 - **Threat IDs**: `THR-{NN}-{SSS}`, sequential within each category. Order findings within a category by descending Risk, then by skill name ascending — this gives stable IDs across reruns on unchanged input.
 - **Grouping**: only group skills into one entry when they share BOTH the same threat pattern AND the same final Risk rating. If two skills share a pattern but resolve to different Likelihood, Impact, or Risk, they MUST be separate entries with separate THR IDs. Example: `$ARGUMENTS` reaching shell (Critical) is NOT the same finding as `$ARGUMENTS` influencing prompt context (Medium).
 - **One-sentence descriptions** in the Blocking section: keep to a single sentence each.
-- **LLM07 systemic finding**: report once as a single entry, not per-skill.
+- **LLM08 Hidden Context Exposure**: assess per skill (one entry per affected skill), grading severity by what is actually exposed — informational when no secrets or behavioral-control logic leak. Do NOT collapse it into a single systemic finding.
 
 ### 8. Output Summary
 

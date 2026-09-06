@@ -2,7 +2,7 @@
 
 **Date**: {{DATE}}
 **Scope**: {{SCOPE_DESCRIPTION}}
-**Methodology**: OWASP Top 10 for LLM Applications 2025
+**Methodology**: OWASP Top 10 for LLM Applications 2026
 
 ## Blocking Threats
 
@@ -66,7 +66,7 @@ No threat detected.
 No threat detected.
 {{/if}}
 
-### LLM03: Supply Chain
+### LLM03: Excessive Agency
 
 {{#if LLM03_THREATS}}
 {{#each LLM03_THREATS}}
@@ -79,7 +79,7 @@ No threat detected.
 No threat detected.
 {{/if}}
 
-### LLM04: Data and Model Poisoning
+### LLM04: Supply Chain
 
 {{#if LLM04_THREATS}}
 {{#each LLM04_THREATS}}
@@ -92,7 +92,7 @@ No threat detected.
 No threat detected.
 {{/if}}
 
-### LLM05: Improper Output Handling
+### LLM05: Data and Model Poisoning
 
 {{#if LLM05_THREATS}}
 {{#each LLM05_THREATS}}
@@ -105,7 +105,7 @@ No threat detected.
 No threat detected.
 {{/if}}
 
-### LLM06: Excessive Agency
+### LLM06: Unbounded Consumption
 
 {{#if LLM06_THREATS}}
 {{#each LLM06_THREATS}}
@@ -118,7 +118,7 @@ No threat detected.
 No threat detected.
 {{/if}}
 
-### LLM07: System Prompt Leakage
+### LLM07: Misinformation
 
 {{#if LLM07_THREATS}}
 {{#each LLM07_THREATS}}
@@ -131,7 +131,7 @@ No threat detected.
 No threat detected.
 {{/if}}
 
-### LLM08: Vector and Embedding Weaknesses
+### LLM08: Hidden Context Exposure
 
 {{#if LLM08_THREATS}}
 {{#each LLM08_THREATS}}
@@ -144,7 +144,7 @@ No threat detected.
 No threat detected.
 {{/if}}
 
-### LLM09: Misinformation
+### LLM09: Vector and Embedding Weaknesses
 
 {{#if LLM09_THREATS}}
 {{#each LLM09_THREATS}}
@@ -157,7 +157,7 @@ No threat detected.
 No threat detected.
 {{/if}}
 
-### LLM10: Unbounded Consumption
+### LLM10: Improper Output Handling
 
 {{#if LLM10_THREATS}}
 {{#each LLM10_THREATS}}
