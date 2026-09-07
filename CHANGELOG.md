@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.1.0] - 2026-09-06
+
+### Added
+- **Applicability gating (three-state disposition)**: each category now resolves to a threat finding, `No threat detected.` (applicable and clean), or `N/A — {reason}` (structurally not applicable to a single `SKILL.md`). The four gateable categories — LLM05 (Data and Model Poisoning), LLM06 (Unbounded Consumption), LLM09 (Vector and Embedding Weaknesses), and LLM10 (Improper Output Handling) — are evaluated only when their applicability surface is present; otherwise they are marked `N/A` and excluded from threat counts, the risk matrix, and the blocking set. The other six categories (LLM01–04, LLM07, LLM08) remain always-evaluated. This removes misleading "No threat detected" output for categories that could never fire.
+
 ## [2.0.0] - 2026-09-05
 
 ### Changed
