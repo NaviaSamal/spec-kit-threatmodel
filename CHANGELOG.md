@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.1.1] - 2026-09-06
+
+### Fixed
+- **LLM01 Prompt Injection — usage-pattern classification**: the analyzer now distinguishes three `$ARGUMENTS` usage patterns and sets Likelihood accordingly: *instruction-interpolation* (argument embedded in instruction prose or file-path constructions) → High; *API/tool parameter* (argument passed to an API/tool call, no prose interpolation) → Medium, or No threat detected if format/allowlist validation is present; *scope selector only* (argument used only to select what to scan) → No threat detected. Previously all three patterns triggered the same High finding, producing noise on skills that use `$ARGUMENTS` only for routing. Additionally, the analyzer no longer downgrades LLM01 Likelihood because the skill text claims the argument is "attacker-controlled" or "trusted" — those are documentation, not mitigations.
+
 ## [2.1.0] - 2026-09-06
 
 ### Added
