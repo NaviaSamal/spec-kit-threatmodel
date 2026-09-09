@@ -101,8 +101,7 @@ No threat detected.
   - Mitigation: {{mitigation}}
 
 {{/each}}
-{{else}}
-No threat detected.
+{{else}}{{#if LLM05_APPLICABLE}}No threat detected.{{else}}N/A — {{LLM05_NA_REASON}}{{/if}}
 {{/if}}
 
 ### LLM06: Unbounded Consumption
@@ -114,8 +113,7 @@ No threat detected.
   - Mitigation: {{mitigation}}
 
 {{/each}}
-{{else}}
-No threat detected.
+{{else}}{{#if LLM06_APPLICABLE}}No threat detected.{{else}}N/A — {{LLM06_NA_REASON}}{{/if}}
 {{/if}}
 
 ### LLM07: Misinformation
@@ -153,8 +151,7 @@ No threat detected.
   - Mitigation: {{mitigation}}
 
 {{/each}}
-{{else}}
-No threat detected.
+{{else}}{{#if LLM09_APPLICABLE}}No threat detected.{{else}}N/A — {{LLM09_NA_REASON}}{{/if}}
 {{/if}}
 
 ### LLM10: Improper Output Handling
@@ -166,8 +163,7 @@ No threat detected.
   - Mitigation: {{mitigation}}
 
 {{/each}}
-{{else}}
-No threat detected.
+{{else}}{{#if LLM10_APPLICABLE}}No threat detected.{{else}}N/A — {{LLM10_NA_REASON}}{{/if}}
 {{/if}}
 
 ## Analysis Metadata

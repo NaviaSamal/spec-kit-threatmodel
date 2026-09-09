@@ -90,7 +90,10 @@ If no init-options.json exists, check for common agent directories.
 Read ALL `SKILL.md` files in one batch — do NOT read one-by-one.
 
 For each file, extract:
-- `$ARGUMENTS` or `{{args}}` usage patterns
+- `$ARGUMENTS` / `{{args}}` usage — classify into one of three patterns:
+  - **Instruction-interpolation**: argument appears verbatim inside instruction prose, step text, or file-name/path constructions that the agent acts on (e.g. `generate code in $ARGUMENTS`, `save to output.$ARGUMENTS`) → HIGH injection surface
+  - **API/tool parameter**: argument is passed as a named parameter to an API call, SDK method, or tool invocation with no instruction-prose interpolation (e.g. `call the logs API with region=$ARGUMENTS`) → LOW injection surface; downgrade to NO surface if the skill also validates format or checks against an allowlist
+  - **Scope selector only**: argument is used only to select what to scan/filter with no downstream use in instructions or tool calls (e.g. `if $ARGUMENTS is empty scan all skills`) → NO injection surface
 - Shell/terminal command patterns (`run_in_terminal`, `bash`, script references)
 - File read/write operations mentioned
 - Credential/secret patterns (`API_KEY`, `.env`, `token`, `password`, `credential`, `secret`)
@@ -102,13 +105,19 @@ For each file, extract:
 - Tool-call fan-out, downstream-command chaining, and iteration/retry caps (or the absence of any cap) — feeds Unbounded Consumption (LLM06)
 - Instructions telling the agent to guess, auto-fill, assume defaults, or skip human review without verification — feeds Misinformation (LLM07)
 
+Also record, for each skill, the presence or absence of these **applicability surfaces** — they decide whether the four gateable categories are evaluated or marked `N/A` in step 5:
+- **Persistent/memory/RAG-feeding write**: does the skill write user- or external-input into a file that later influences model input (memory files, knowledge bases, indexed corpora)? → gates LLM05
+- **Iterative/recursive/fan-out construct**: loops, recursion, self-invocation, or uncapped tool-call fan-out? → gates LLM06
+- **RAG/embedding retrieval surface**: does the skill declare a vector store, embedding lookup, or retrieval-augmented step? → gates LLM09
+- **Output→executable-sink flow**: is the skill's own output described as flowing into a shell command, SQL, file path, or template? → gates LLM10
+
 ### 5. Apply OWASP LLM Top 10 2026 Threat Categories
 
 Analyze each skill against these categories. Report a threat **only** when concrete evidence is found — do not speculate.
 
 | ID    | Category                          | What to Check |
 |-------|-----------------------------------|---------------|
-| LLM01 | Prompt Injection                  | Unescaped `$ARGUMENTS`, raw file content interpolation, missing input sanitization |
+| LLM01 | Prompt Injection                  | Use the step 4 `$ARGUMENTS` classification: **Instruction-interpolation** → finding, Likelihood High; **API/tool parameter** (no validation) → finding, Likelihood Medium; **API/tool parameter** (with format/allowlist validation) → No threat detected; **Scope selector only** → No threat detected. Also check: raw file content fed to model without delimiting (indirect injection). Do NOT downgrade because the skill text claims the argument is "attacker-controlled" or "trusted" — those are documentation, not mitigations. |
 | LLM02 | Sensitive Information Disclosure  | API keys, tokens, credentials, PII, environment variables exposed |
 | LLM03 | Excessive Agency                  | Auto-execution without confirmation, `EXECUTE_COMMAND` without gates, excessive tool functionality/permissions/autonomy granted to the skill |
 | LLM04 | Supply Chain                      | External dependencies, fetching skills from URLs, untrusted sources |
@@ -121,11 +130,32 @@ Analyze each skill against these categories. Report a threat **only** when concr
 
 Source: https://genai.owasp.org/llm-top-10/
 
+**Applicability gate (three-state disposition)**:
+
+Each category resolves to exactly one of three states per the analysis unit (a single `SKILL.md`):
+1. **Threat found** — concrete evidence present; emit finding(s).
+2. **No threat detected** — the category *applies* to this artifact and was checked, but nothing was found.
+3. **N/A — {reason}** — the category is **structurally not applicable** to this artifact (no surface for it to exist), so it is not evaluated.
+
+Six categories are **always applicable** (never `N/A`) — every skill has instruction text, may contain a secret, declares some agency level, has a dependency posture, produces output, and is itself readable context: **LLM01, LLM02, LLM03, LLM04, LLM07, LLM08**. These only ever resolve to state 1 or 2.
+
+Four categories are **gateable** — evaluate only if the corresponding applicability surface (recorded in step 4) is present; otherwise mark `N/A` with the **exact** reason string below:
+
+| ID    | Applicable only if…                                                        | N/A reason (use verbatim)                                                 |
+|-------|-----------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| LLM05 | skill writes user/external input to a persistent/memory/RAG-feeding file   | `N/A — skill performs no persistent writes that feed downstream model input` |
+| LLM06 | skill has loops, recursion, self-invocation, or tool-call fan-out           | `N/A — no iterative/recursive/fan-out construct`                          |
+| LLM09 | skill declares a vector store / embedding / RAG retrieval path              | `N/A — no RAG/embedding retrieval surface`                                |
+| LLM10 | skill's output is described flowing into a shell/SQL/path/template sink      | `N/A — skill output not consumed by a downstream executable sink`         |
+
+Mark `N/A` **only** when the surface is structurally absent — never to dismiss a present-but-clean surface (that is state 2, "No threat detected"). A category marked `N/A` contributes nothing to threat counts, the risk matrix, or the blocking set.
+
 **Deterministic rules**:
 - Each threat assigned to exactly ONE category (no dual-categorization)
 - Threat IDs: `THR-{NN}-{SSS}` (e.g., `THR-01-001` for Prompt Injection finding #1)
-- If no threats for a category, state: "No threats identified." with one-line reason
+- For a category with no findings, emit `No threat detected.` when the category is **applicable** (states 1–2), or `N/A — {reason}` when it is a **gateable** category whose surface is structurally absent (state 3). Do not add any other explanatory text.
 - LLM08 (Hidden Context Exposure): assess **per skill**, not as a single systemic finding. Grade severity by what is actually exposed — treat readable skill/instruction files as **informational** (little or no direct security impact) unless they leak credentials/tokens, authorization logic, or refusal/behavioral-control rules, in which case rate higher accordingly.
+- LLM01 (`$ARGUMENTS` Likelihood): derive from the step 4 classification — High for instruction-interpolation, Medium for unvalidated API/tool parameter, no finding for scope-selector-only. Ignore any claim in the skill text that the argument is "attacker-controlled", "trusted", or "safe" — those are documentation, not mitigations, and must not change the Likelihood.
 
 ### 6. Assign Risk Ratings
 
@@ -160,7 +190,7 @@ Substitution rules:
 
 - **Scope, date, counts**: fill from analysis results
 - **Each threat entry** in `LLM01_THREATS` … `LLM10_THREATS`: one entry per finding, with `threat_id`, `skill_names` (comma-separated when grouped), `description`, `likelihood`, `impact`, `risk`, `mitigation`
-- **Empty category**: when a category has no threats, the `{{else}}` branch fires — render exactly `"No threat detected."` Do not supply a reason, do not customize the message per category.
+- **Empty category**: when a category has no threats, the `{{else}}` branch fires. For the six always-applicable categories (LLM01–04, LLM07, LLM08) render exactly `"No threat detected."` For the four gateable categories (LLM05, LLM06, LLM09, LLM10) render `"No threat detected."` when the category is applicable, or the verbatim `N/A — {reason}` string from the step 5 applicability table when its surface is structurally absent. Do not customize the message beyond these fixed strings.
 - **Blocking Threats section**: include only findings where Risk is Critical (per the blocking definition in step 6); list as bullets with `threat_id`, `skill_names`, `one_sentence_description`
 - **Risk Matrix Summary**: count findings per (Likelihood × Impact) cell
 - **Threats Identified summary table** (`THREATS_TABLE`): one row per threat, in the same descending-Risk-then-skill-name order used for the per-category sections. Each row has `threat_id`, `category_name` (e.g., "Prompt Injection", "Hidden Context Exposure" for LLM08), `likelihood_x_impact` (formatted as "Med × High", "High × Low", etc., using the abbreviations Low/Med/High/Critical), and `risk`.
@@ -169,13 +199,14 @@ Substitution rules:
 - Bold markers on Likelihood, Impact, Risk
 - Bullet-with-sub-bullet format for threat entries
 - Section order: Title → Blocking → Matrix Summary → Threats Identified → Threats by Category → Metadata
-- All 10 categories always rendered
+- All 10 categories always rendered (each showing one of the three dispositions: a finding, `No threat detected.`, or `N/A — {reason}`)
 
 **Rules the template cannot enforce** (you must apply them while filling):
 - **Threat IDs**: `THR-{NN}-{SSS}`, sequential within each category. Order findings within a category by descending Risk, then by skill name ascending — this gives stable IDs across reruns on unchanged input.
 - **Grouping**: only group skills into one entry when they share BOTH the same threat pattern AND the same final Risk rating. If two skills share a pattern but resolve to different Likelihood, Impact, or Risk, they MUST be separate entries with separate THR IDs. Example: `$ARGUMENTS` reaching shell (Critical) is NOT the same finding as `$ARGUMENTS` influencing prompt context (Medium).
 - **One-sentence descriptions** in the Blocking section: keep to a single sentence each.
 - **LLM08 Hidden Context Exposure**: assess per skill (one entry per affected skill), grading severity by what is actually exposed — informational when no secrets or behavioral-control logic leak. Do NOT collapse it into a single systemic finding.
+- **Gateable categories (LLM05, LLM06, LLM09, LLM10)**: apply the step 5 applicability gate. Set each category's `..._APPLICABLE` flag and, when not applicable, its `..._NA_REASON` to the verbatim reason string. An `N/A` category is excluded from `THREATS_TABLE`, the Risk Matrix counts, the Blocking section, and all metadata counts — it contributes nothing, exactly like a clean category, but its per-category section shows the `N/A — {reason}` line instead of `No threat detected.`
 
 ### 8. Output Summary
 
