@@ -138,8 +138,7 @@ No threat detected.
   - Mitigation: {{mitigation}}
 
 {{/each}}
-{{else}}
-No threat detected.
+{{else}}{{#if LLM08_INFORMATIONAL}}Informational — plain workflow instructions only; no security-relevant hidden context present.{{else}}No threat detected.{{/if}}
 {{/if}}
 
 ### LLM09: Vector and Embedding Weaknesses
