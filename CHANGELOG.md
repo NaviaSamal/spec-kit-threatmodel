@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.2] - 2026-09-09
+
+### Fixed
+- **LLM08 Hidden Context Exposure — Informational disposition**: plain workflow skills (step ordering, iteration caps, clarification rules, naming conventions) no longer produce a Low THR-ID finding. LLM08 now uses a four-state disposition aligned with the OWASP 2026 severity scale: Threat found (Medium+) → THR-ID assigned; No threat detected → applicable but clean; **Informational** → only plain workflow instructions, no THR-ID, excluded from threat counts and risk matrix; N/A → never used for LLM08. Only credentials/tokens, authorization logic, refusal/content-policy rules, or privilege-exposing tool schemas trigger a finding. This eliminates false-positive Low findings on skills that contain no security-relevant hidden context.
+- **LLM04 Supply Chain — scope correction**: the `.specify/extensions.yml` hook-dispatch pattern is no longer flagged as LLM04. That file is written and managed by the `specify` CLI at `extension add` time; it is a user-consented install-time registry, not an attacker-controlled surface. The OWASP 2026 PDF explicitly scopes LLM04 to ML artifacts (models, datasets, adapters, conversion pipelines) and redirects agentic tool-registry risks to ASI04. LLM04 detection now focuses on real runtime supply-chain surfaces: skill instructions to `pip install`, `npm install`, `curl | bash`, or load external model artifacts where package/URL names may be attacker-influenced or LLM-hallucinated (slopsquatting risk).
+- **LLM03 Excessive Agency — impact calibration**: when a skill has mandatory hooks that auto-execute (`optional: false`) without a user confirmation gate AND the same skill has a confirmed LLM01 instruction-interpolation finding, LLM03 Impact is now rated High (not Medium) — the injection blast radius reaches the hook execution path, making the effective threat Medium × High = High.
+
 ## [2.1.1] - 2026-09-06
 
 ### Fixed

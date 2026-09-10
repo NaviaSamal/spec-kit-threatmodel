@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "threatmodel"
   name: "OWASP LLM Threat Model"
-  version: "2.1.1"
+  version: "2.1.2"
   description: "OWASP Top 10 for LLM Applications 2026 threat analysis on agent artifacts"
   author: "NaviaSamal"
   repository: "https://github.com/NaviaSamal/spec-kit-threatmodel"
